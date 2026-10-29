@@ -41,39 +41,3 @@ class Game:
                         return True
 
         return False
-
-    # Properties to expose model state
-    #@property
-    #def grid_x(self):
-    #    return self.model.grid_x
-
-    #@property
-    #def grid_y(self):
-    #    return self.model.grid_y
-
-    #@property
-    #def h_segments(self):
-    #    return self.model.h_segments
-
-    #@property
-    #def v_segments(self):
-    #    return self.model.v_segments
-
-    #@property
-    #def squares(self):
-    #    return self.model.squares
-
-    #@property
-    #def points(self):
-    #    return self.model.points
-
-    #@property
-    #def current_player(self):
-    #    return self.model.current_player
-
-    #@property
-    #def game_over(self):
-    #    return self.model.game_over
-
-    #def get_scores(self):
-    #    return self.model.get_scores()

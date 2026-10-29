@@ -7,12 +7,7 @@ import config
 class SettingsWindow:
     def __init__(self, manager, grid_x, grid_y, rules, p1_name, p2_name, p1_color_rgb, p2_color_rgb):
         self.manager = manager
-        self.window = UIWindow(
-            rect=pygame.Rect((100, 80), (400, 480)),
-            window_display_title="Game Settings",
-            manager=manager
-        )
-
+        self.window = UIWindow(rect=pygame.Rect((100, 80), (400, 480)), window_display_title="Game Settings", manager=manager)
         y_offset = 15
 
         # Player 1 Name
