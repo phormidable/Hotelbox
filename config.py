@@ -1,7 +1,7 @@
 # config.py
 
 # Grid settings
-GRID_SIZE = 5  # This means a 10x10 grid of BOXES (11x11 dots)
+GRID_SIZE = 3  # This means a 10x10 grid of BOXES (11x11 dots)
 
 # Window settings
 WINDOW_WIDTH = 600
