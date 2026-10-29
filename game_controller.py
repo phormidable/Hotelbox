@@ -77,53 +77,43 @@ class GameController:
         """Renders the game board based on current model state."""
         self.screen.fill((240, 240, 240))
         gray = (180, 180, 180)
+        ox, oy, sp = self.BOARD_OFFSET_X, self.BOARD_OFFSET_Y, self.SPACING
 
-        # Empty segments
-        for r in range(self.game.grid_y + 1):
-            for c in range(self.game.grid_x):
-                start = (self.BOARD_OFFSET_X + c * self.SPACING, self.BOARD_OFFSET_Y + r * self.SPACING)
-                end = (self.BOARD_OFFSET_X + (c + 1) * self.SPACING, self.BOARD_OFFSET_Y + r * self.SPACING)
-                pygame.draw.line(self.screen, gray, start, end, 2)
+        # Draw empty segments (gray)
+        for row in self.game.h_segments:
+            for seg in row:
+                pygame.draw.line(self.screen, gray, seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), 2)
 
-        for r in range(self.game.grid_y):
-            for c in range(self.game.grid_x + 1):
-                start = (self.BOARD_OFFSET_X + c * self.SPACING, self.BOARD_OFFSET_Y + r * self.SPACING)
-                end = (self.BOARD_OFFSET_X + c * self.SPACING, self.BOARD_OFFSET_Y + (r + 1) * self.SPACING)
-                pygame.draw.line(self.screen, gray, start, end, 2)
+        for row in self.game.v_segments:
+            for seg in row:
+                pygame.draw.line(self.screen, gray, seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), 2)
 
-        # Completed squares
-        for r in range(self.game.grid_y):
-            for c in range(self.game.grid_x):
-                square = self.game.squares[r][c]
+        # Draw completed squares
+        for r, row in enumerate(self.game.squares):
+            for c, square in enumerate(row):
                 if square.completed_by != 0:
                     color = config.PLAYER_COLORS[square.completed_by]
-                    box_surface = pygame.Surface((self.SPACING, self.SPACING), pygame.SRCALPHA)
-                    faint_color = color + (60,)
-                    box_surface.fill(faint_color)
-                    self.screen.blit(box_surface, (self.BOARD_OFFSET_X + c * self.SPACING, self.BOARD_OFFSET_Y + r * self.SPACING))
+                    box_surface = pygame.Surface((sp, sp), pygame.SRCALPHA)
+                    box_surface.fill(color + (60,))
+                    self.screen.blit(box_surface, (ox + c * sp, oy + r * sp))
 
-        # Claimed segments
-        for r in range(self.game.grid_y + 1):
-            for c in range(self.game.grid_x):
-                seg = self.game.h_segments[r][c]
+        # Draw claimed segments (player colors)
+        for row in self.game.h_segments:
+            for seg in row:
                 if seg.owner != 0:
-                    start = (self.BOARD_OFFSET_X + c * self.SPACING, self.BOARD_OFFSET_Y + r * self.SPACING)
-                    end = (self.BOARD_OFFSET_X + (c + 1) * self.SPACING, self.BOARD_OFFSET_Y + r * self.SPACING)
-                    pygame.draw.line(self.screen, config.PLAYER_COLORS[seg.owner], start, end, config.LINE_THICKNESS)
+                    pygame.draw.line(self.screen, config.PLAYER_COLORS[seg.owner],
+                                     seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), config.LINE_THICKNESS)
 
-        for r in range(self.game.grid_y):
-            for c in range(self.game.grid_x + 1):
-                seg = self.game.v_segments[r][c]
+        for row in self.game.v_segments:
+            for seg in row:
                 if seg.owner != 0:
-                    start = (self.BOARD_OFFSET_X + c * self.SPACING, self.BOARD_OFFSET_Y + r * self.SPACING)
-                    end = (self.BOARD_OFFSET_X + c * self.SPACING, self.BOARD_OFFSET_Y + (r + 1) * self.SPACING)
-                    pygame.draw.line(self.screen, config.PLAYER_COLORS[seg.owner], start, end, config.LINE_THICKNESS)
+                    pygame.draw.line(self.screen, config.PLAYER_COLORS[seg.owner],
+                                     seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), config.LINE_THICKNESS)
 
-        # Dots
-        for r in range(self.game.grid_y + 1):
-            for c in range(self.game.grid_x + 1):
-                center = (self.BOARD_OFFSET_X + c * self.SPACING, self.BOARD_OFFSET_Y + r * self.SPACING)
-                pygame.draw.circle(self.screen, (50, 50, 50), center, config.DOT_RADIUS)
+        # Draw dots
+        for row in self.game.model.points:
+            for point in row:
+                pygame.draw.circle(self.screen, (50, 50, 50), point.to_pixel(ox, oy, sp), config.DOT_RADIUS)
 
     def draw_ui(self):
         """Draws the scoreboard, turn indicator, and game-over overlay."""

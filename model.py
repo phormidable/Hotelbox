@@ -7,6 +7,10 @@ class Point:
         self.r = r
         self.c = c
 
+    def to_pixel(self, offset_x: int, offset_y: int, spacing: int) -> tuple[int, int]:
+        """Converts grid coordinates to pixel coordinates."""
+        return offset_x + self.c * spacing, offset_y + self.r * spacing
+
 
 class Segment:
     """Represents a line segment between two points."""
@@ -19,13 +23,9 @@ class Segment:
 
     def get_pixel_midpoint(self, offset_x: int, offset_y: int, spacing: int) -> tuple[int, int]:
         """Returns the pixel coordinates of this segment's midpoint."""
-        if self.is_horizontal:
-            x = offset_x + self.start.c * spacing + spacing // 2
-            y = offset_y + self.start.r * spacing
-        else:
-            x = offset_x + self.start.c * spacing
-            y = offset_y + self.start.r * spacing + spacing // 2
-        return x, y
+        sx, sy = self.start.to_pixel(offset_x, offset_y, spacing)
+        ex, ey = self.end.to_pixel(offset_x, offset_y, spacing)
+        return (sx + ex) // 2, (sy + ey) // 2
 
 
 class Square:
