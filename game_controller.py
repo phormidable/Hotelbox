@@ -74,7 +74,7 @@ class GameController:
             for seg in row:
                 pygame.draw.line(self.screen, gray, seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), 2)
 
-        # Draw completed squares (using cached surfaces for performance)
+        # Draw completed squares
         for r, row in enumerate(self.game.model.squares):
             for c, square in enumerate(row):
                 if square.completed_by != 0:
@@ -97,6 +97,17 @@ class GameController:
         for row in self.game.model.points:
             for point in row:
                 pygame.draw.circle(self.screen, (50, 50, 50), point.to_pixel(ox, oy, sp), config.DOT_RADIUS)
+
+        # Draw hovered segment (rendered last so it pops on top)
+        if not self.game.is_over and not self.settings_window and not self.confirm_window:
+            hovered = self.game.get_hovered_segment(pygame.mouse.get_pos(), ox, oy, sp, self.click_threshold)
+            if hovered:
+                is_h, r, c = hovered
+                seg = self.game.model.h_segments[r][c] if is_h else self.game.model.v_segments[r][c]
+
+                # Draw with hover color and slightly thicker line for emphasis
+                pygame.draw.line(self.screen, config.HOVER_COLOR,
+                                 seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), config.LINE_THICKNESS + 2)
 
     def draw_ui(self):
         score1, score2 = self.game.model.get_scores()
