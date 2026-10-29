@@ -64,6 +64,10 @@ class Game:
         return self.model.squares
 
     @property
+    def points(self):
+        return self.model.points
+
+    @property
     def current_player(self):
         return self.model.current_player
 
