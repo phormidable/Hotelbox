@@ -85,16 +85,16 @@ class GameController:
         ox, oy, sp = self.board_offset_x, self.board_offset_y, self.spacing
 
         # Draw empty segments (gray)
-        for row in self.game.h_segments:
+        for row in self.game.model.h_segments:
             for seg in row:
                 pygame.draw.line(self.screen, gray, seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), 2)
 
-        for row in self.game.v_segments:
+        for row in self.game.model.v_segments:
             for seg in row:
                 pygame.draw.line(self.screen, gray, seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), 2)
 
         # Draw completed squares
-        for r, row in enumerate(self.game.squares):
+        for r, row in enumerate(self.game.model.squares):
             for c, square in enumerate(row):
                 if square.completed_by != 0:
                     color = self.player_colors[square.completed_by]
@@ -103,26 +103,29 @@ class GameController:
                     self.screen.blit(box_surface, (ox + c * sp, oy + r * sp))
 
         # Draw claimed segments (player colors)
-        for row in self.game.h_segments:
+        for row in self.game.model.h_segments:
             for seg in row:
                 if seg.owner != 0:
                     pygame.draw.line(self.screen, self.player_colors[seg.owner],
                                      seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), config.LINE_THICKNESS)
 
-        for row in self.game.v_segments:
+        for row in self.game.model.v_segments:
             for seg in row:
                 if seg.owner != 0:
                     pygame.draw.line(self.screen, self.player_colors[seg.owner],
                                      seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), config.LINE_THICKNESS)
 
         # Draw dots
-        for row in self.game.points:
+        for row in self.game.model.points:
             for point in row:
                 pygame.draw.circle(self.screen, (50, 50, 50), point.to_pixel(ox, oy, sp), config.DOT_RADIUS)
 
+    def game_over(self):
+        return self.game.model.game_over
+
     def draw_ui(self):
         """Draws the scoreboard, turn indicator, and game-over overlay."""
-        score1, score2 = self.game.get_scores()
+        score1, score2 = self.game.model.get_scores()
 
         p1_text = self.score_font.render(f"{self.player_names[1]}: {score1}", True, self.player_colors[1])
         self.screen.blit(p1_text, (50, 15))
@@ -131,14 +134,14 @@ class GameController:
         p2_rect = p2_text.get_rect(right=config.WINDOW_WIDTH - 50, top=15)
         self.screen.blit(p2_text, p2_rect)
 
-        if not self.game.game_over:
-            text_color = self.player_colors[self.game.current_player]
-            turn_text = f"{self.player_names[self.game.current_player]}'s Turn"
+        if not self.game_over():
+            text_color = self.player_colors[self.game.model.current_player]
+            turn_text = f"{self.player_names[self.game.model.current_player]}'s Turn"
             turn_surface = self.font.render(turn_text, True, text_color)
             turn_rect = turn_surface.get_rect(center=(config.WINDOW_WIDTH // 2, config.WINDOW_HEIGHT - config.BOTTOM_MARGIN // 2))
             self.screen.blit(turn_surface, turn_rect)
 
-        if self.game.game_over:
+        if self.game_over():
             overlay = pygame.Surface((config.WINDOW_WIDTH, config.WINDOW_HEIGHT), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 160))
             self.screen.blit(overlay, (0, 0))
@@ -244,11 +247,11 @@ class GameController:
                     self.confirm_window = None
 
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r and self.game.game_over:
+                if event.key == pygame.K_r and self.game_over():
                     self.game.reset(self.grid_x, self.grid_y, self.rules)
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1 and not self.game.game_over and self.settings_window is None and self.confirm_window is None:
+                if event.button == 1 and not self.game_over() and self.settings_window is None and self.confirm_window is None:
                     self.game.handle_click(event.pos, self.board_offset_x, self.board_offset_y, self.spacing, self.click_threshold)
 
         return True
