@@ -1,6 +1,6 @@
 # Window settings
 WINDOW_WIDTH = 600
-WINDOW_HEIGHT = 600
+WINDOW_HEIGHT = 680
 
 # Grid defaults
 GRID_DEFAULT_X = 4
@@ -38,5 +38,5 @@ DOT_COLOR = (50, 50, 50)    # Dark gray/black for uncolored dot zones
 HOVER_COLOR = (255, 255, 0) # Pure Yellow
 
 # Layout constants
-TOP_MARGIN = 90
-BOTTOM_MARGIN = 60
+TOP_MARGIN = 0
+BOTTOM_MARGIN = 20

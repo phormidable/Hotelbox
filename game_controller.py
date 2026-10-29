@@ -163,8 +163,14 @@ class GameController:
             text_color = self.player_colors[self.game.model.current_player]
             turn_text = f"{self.player_names[self.game.model.current_player]}'s Turn"
             turn_surface = self.font.render(turn_text, True, text_color)
-            turn_rect = turn_surface.get_rect(center=(config.WINDOW_WIDTH // 2, config.WINDOW_HEIGHT - config.BOTTOM_MARGIN // 2))
+            turn_rect = turn_surface.get_rect(center=(config.WINDOW_WIDTH // 2, config.WINDOW_HEIGHT - 60))
             self.screen.blit(turn_surface, turn_rect)
+
+            # --- NEW: Remaining moves ---
+            remaining_text = f"Remaining moves: {self.game.model.remaining_segments}"
+            remaining_surface = self.score_font.render(remaining_text, True, (100, 100, 100))  # Neutral dark gray
+            remaining_rect = remaining_surface.get_rect(center=(config.WINDOW_WIDTH // 2, config.WINDOW_HEIGHT - 20))
+            self.screen.blit(remaining_surface, remaining_rect)
 
         if self.game.is_over:
             overlay = pygame.Surface((config.WINDOW_WIDTH, config.WINDOW_HEIGHT), pygame.SRCALPHA)
