@@ -28,7 +28,7 @@ DEFAULT_PLAYER_COLORS = {
 }
 
 # Rules default
-DEFAULT_RULES = "4_sides"
+DEFAULT_RULES = "classic"
 DEFAULT_EXTRA_TURN = True  # Standard Dots and Boxes rule
 
 # Visual constants

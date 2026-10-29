@@ -34,6 +34,7 @@ class GameController:
         self.board_offset_y = 0
         self.click_threshold = 0.0
         self.calculate_layout()
+        self.pending_settings = None
 
         self.game = Game(self.grid_x, self.grid_y, self.rules, self.extra_turn_on_square)
         self.settings_window = None
@@ -192,57 +193,79 @@ class GameController:
             restart_rect = restart_surf.get_rect(center=(config.WINDOW_WIDTH // 2, config.WINDOW_HEIGHT // 2 + 30))
             self.screen.blit(restart_surf, restart_rect)
 
-    def _apply_settings(self, reset_board: bool = False):
-        try:
-            self.grid_x = int(self.settings_window.grid_x.get_text())
-            self.grid_y = int(self.settings_window.grid_y.get_text())
-        except ValueError:
-            pass
+    def _read_settings(self) -> dict:
+        """Read the settings window ONCE into a plain snapshot. No widget references kept."""
+        sw = self.settings_window
 
-        self.player_names[1] = self.settings_window.p1_name.get_text()
-        self.player_names[2] = self.settings_window.p2_name.get_text()
+        def as_int(entry, fallback):
+            try:
+                return max(2, min(int(entry.get_text()), 20))
+            except ValueError:
+                return fallback
 
-        rules_text = self.settings_window.rules.selected_option
-        self.rules = "classic" if "Classic" in rules_text else "4_sides"
+        return {
+            "grid_x": as_int(sw.grid_x, self.grid_x),
+            "grid_y": as_int(sw.grid_y, self.grid_y),
+            "rules": "classic" if "Classic" in sw.rules.selected_option else "4_sides",
+            "extra_turn": sw.extra_turn.selected_option == "Extra turn",
+            "names": {1: sw.p1_name.get_text(), 2: sw.p2_name.get_text()},
+            "colors": {
+                1: config.PLAYER_COLOR_CHOICES.get(sw.p1_color.selected_option, self.player_colors[1]),
+                2: config.PLAYER_COLOR_CHOICES.get(sw.p2_color.selected_option, self.player_colors[2]),
+            },
+        }
 
-        # Read the checkbox state
-        extra_turn_text = self.settings_window.extra_turn.selected_option
-        self.extra_turn_on_square = (extra_turn_text == 'Extra turn')
+    def _needs_reset(self, s: dict) -> bool:
+        """Compare a snapshot against the CURRENT game model (single source of truth)."""
+        m = self.game.model
+        return (s["grid_x"] != m.grid_x
+                or s["grid_y"] != m.grid_y
+                or s["rules"] != m.rules
+                or s["extra_turn"] != m.extra_turn_on_square)
 
-        p1_color = self.settings_window.p1_color.selected_option
-        p2_color = self.settings_window.p2_color.selected_option
-        self.player_colors[1] = config.PLAYER_COLOR_CHOICES.get(p1_color, self.player_colors[1])
-        self.player_colors[2] = config.PLAYER_COLOR_CHOICES.get(p2_color, self.player_colors[2])
+    def _apply_settings(self, s: dict, reset_board: bool):
+        """Apply a snapshot. Never touches the settings widgets."""
+        self.grid_x, self.grid_y = s["grid_x"], s["grid_y"]
+        self.rules = s["rules"]
+        self.extra_turn_on_square = s["extra_turn"]
+        self.player_names.update(s["names"])
+        self.player_colors.update(s["colors"])
+        self.player_colors[0] = config.DEFAULT_SEGMENT_COLOR
 
         self.calculate_layout()
+
         if reset_board:
             self.game.reset(self.grid_x, self.grid_y, self.rules, self.extra_turn_on_square)
         else:
-            # If not resetting the board, still update the rules in the model
+            # Keep the live model in sync when only cosmetic settings changed.
             self.game.model.rules = self.rules
             self.game.model.extra_turn_on_square = self.extra_turn_on_square
 
     def _handle_settings_accept(self):
-        try:
-            new_x = int(self.settings_window.grid_x.get_text())
-            new_y = int(self.settings_window.grid_y.get_text())
-        except ValueError:
-            new_x, new_y = self.grid_x, self.grid_y
+        snapshot = self._read_settings()          # <-- read exactly once
 
-        rules_text = self.settings_window.rules.selected_option
-        rules_changed = ("Classic" in rules_text) != (self.rules == "classic")
-
-        # Check if the extra turn rule was toggled
-        extra_turn_text = self.settings_window.extra_turn.selected_option
-        extra_turn_changed = (extra_turn_text == 'Extra turn') != self.extra_turn_on_square
-
-        # Prompt to reset if ANY major rule/size changed
-        if new_x != self.grid_x or new_y != self.grid_y or rules_changed or extra_turn_changed:
-            self.confirm_window = ConfirmResetWindow(self.ui_manager)
+        if self._needs_reset(snapshot):
+            self.pending_settings = snapshot      # <-- remember it for "Yes"
+            self._open_confirm()
         else:
-            self._apply_settings(reset_board=False)
+            self._apply_settings(snapshot, reset_board=False)
+            self._close_settings()
+
+    def _open_confirm(self):
+        # Never stack confirm dialogs: a stale one is a source of ghost rules.
+        if self.confirm_window:
+            self.confirm_window.window.kill()
+            self.confirm_window = None
+        self.confirm_window = ConfirmResetWindow(self.ui_manager)
+
+    def _close_settings(self):
+        if self.settings_window:
             self.settings_window.window.kill()
             self.settings_window = None
+        if self.confirm_window:
+            self.confirm_window.window.kill()
+            self.confirm_window = None
+        self.pending_settings = None
 
     def handle_events(self) -> bool:
         for event in pygame.event.get():
@@ -250,10 +273,8 @@ class GameController:
                 return False
 
             self.ui_manager.process_events(event)
-
             if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED and self.settings_window:
                 self.settings_window.update_color_options()
-
             elif event.type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_element == self.settings_button:
                     self.settings_window = SettingsWindow(
@@ -265,17 +286,26 @@ class GameController:
                 elif self.settings_window and event.ui_element == self.settings_window.accept_button:
                     self._handle_settings_accept()
                 elif self.confirm_window and event.ui_element == self.confirm_window.yes_btn:
-                    self._apply_settings(reset_board=True)
+                    if self.pending_settings is not None:
+                        self._apply_settings(self.pending_settings, reset_board=True)
+                    self._close_settings()
+                elif self.confirm_window and event.ui_element == self.confirm_window.no_btn:
+                    # Cancel the reset, but keep the settings window open for editing.
                     self.confirm_window.window.kill()
-                    self.settings_window.window.kill()
                     self.confirm_window = None
-                    self.settings_window = None
+                    self.pending_settings = None
+
 
             elif event.type == pygame_gui.UI_WINDOW_CLOSE:
                 if self.settings_window and event.ui_element == self.settings_window.window:
                     self.settings_window = None
+                    self.pending_settings = None
+                    if self.confirm_window:
+                        self.confirm_window.window.kill()
+                        self.confirm_window = None
                 elif self.confirm_window and event.ui_element == self.confirm_window.window:
                     self.confirm_window = None
+                    self.pending_settings = None
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r and self.game.is_over:
