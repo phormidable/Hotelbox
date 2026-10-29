@@ -141,20 +141,30 @@ def check_completed_boxes(is_horizontal, r, c):
 
 def handle_click(mouse_pos):
     global current_player
+
+    print(f"DEBUG: Mouse clicked at {mouse_pos}")  # Debug line 1
+
+    # Check horizontal lines
     for r in range(config.GRID_Y + 1):
         for c in range(config.GRID_X):
             if h_lines[r][c] == 0:
                 mid = get_midpoint(True, r, c)
                 if distance(mouse_pos, mid) < CLICK_THRESHOLD:
+                    print(f"DEBUG: Hit H-Line at r={r}, c={c}")  # Debug line 2
                     h_lines[r][c] = current_player
                     return True, check_completed_boxes(True, r, c)
+
+    # Check vertical lines
     for r in range(config.GRID_Y):
         for c in range(config.GRID_X + 1):
             if v_lines[r][c] == 0:
                 mid = get_midpoint(False, r, c)
                 if distance(mouse_pos, mid) < CLICK_THRESHOLD:
+                    print(f"DEBUG: Hit V-Line at r={r}, c={c}")  # Debug line 3
                     v_lines[r][c] = current_player
                     return True, check_completed_boxes(False, r, c)
+
+    print("DEBUG: No line hit.")  # Debug line 4
     return False, 0
 
 
@@ -254,6 +264,11 @@ while running:
         if ui_manager.process_events(event):
             pass
 
+            # NEW: Listen for dropdown changes to dynamically filter colors
+        if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+            if settings_window:
+                settings_window.update_color_options()
+
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
             # 1. Open Settings
             if event.ui_element == settings_button:
@@ -261,7 +276,6 @@ while running:
 
             # 2. Handle Accept Button
             elif settings_window and event.ui_element == settings_window.accept_button:
-                # Safely get the text, fallback to current config if user typed letters
                 try:
                     new_x = int(settings_window.grid_x.get_text())
                     new_y = int(settings_window.grid_y.get_text())
@@ -271,37 +285,30 @@ while running:
                 grid_x_changed = new_x != config.GRID_X
                 grid_y_changed = new_y != config.GRID_Y
 
-                # NEW: Safely extract the rules text to check for changes
                 rules_opt = settings_window.rules.selected_option
                 rules_text = rules_opt[0] if isinstance(rules_opt, tuple) else rules_opt
                 rules_changed = ("Classic" in rules_text) != (config.RULES == "classic")
 
                 if grid_x_changed or grid_y_changed or rules_changed:
-                    # Open the confirmation dialog
                     confirm_window = ConfirmResetWindow(ui_manager)
                 else:
-                    # Only visual changes (colors/names), no reset needed
                     apply_settings(reset_board=False)
                     settings_window.window.kill()
-                    settings_window = None
+                    settings_window = None  # <--- CRUCIAL FIX: Clears the window state
 
             # 3. Handle Confirmation Dialog "Yes" Button
             elif confirm_window and event.ui_element == confirm_window.yes_btn:
-                # Save local references before apply_settings resets the board
                 cw = confirm_window
                 sw = settings_window
 
-                # Apply the settings and reset the board
                 apply_settings(reset_board=True)
 
-                # Now safely kill the windows using our local references
                 cw.window.kill()
                 if sw:
                     sw.window.kill()
 
-                # Finally, clear the global variables
                 confirm_window = None
-                settings_window = None
+                settings_window = None  # <--- CRUCIAL FIX: Clears the window state
 
         if event.type == pygame_gui.UI_WINDOW_CLOSE:
             if settings_window and event.ui_element == settings_window.window:
@@ -313,8 +320,13 @@ while running:
             if event.key == pygame.K_r and game_over:
                 init_game_state()
 
+
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1 and not game_over and SettingsWindow is None and confirm_window is None:
+            # NEW: This will tell us exactly what is blocking the clicks
+            print(
+                f"DEBUG: Mouse clicked. settings_window is None? {settings_window is None},"
+                f" confirm_window is None? {confirm_window is None}, game_over? {game_over}")
+            if event.button == 1 and not game_over and settings_window is None and confirm_window is None:
                 line_clicked, boxes_completed = handle_click(event.pos)
                 if line_clicked:
                     if boxes_completed == 0:
