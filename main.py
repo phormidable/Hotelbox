@@ -190,18 +190,12 @@ def apply_settings(reset_board=False):
     rules_text = get_dropdown_text(settings_window.rules)
     config.RULES = "classic" if "Classic" in rules_text else "4_sides"
 
-    color_map = {
-        'Green': (34, 139, 34), 'Blue': (30, 144, 255), 'Red': (255, 0, 0),
-        'Purple': (128, 0, 128), 'Orange': (255, 165, 0), 'Cyan': (0, 255, 255)
-    }
-
     # UPDATED: Use the helper to get the color texts
     p1_color_text = get_dropdown_text(settings_window.p1_color)
     p2_color_text = get_dropdown_text(settings_window.p2_color)
 
-    # Use .get() with a fallback color just in case
-    config.PLAYER_COLORS[1] = color_map.get(p1_color_text, (34, 139, 34))
-    config.PLAYER_COLORS[2] = color_map.get(p2_color_text, (30, 144, 255))
+    config.PLAYER_COLORS[1] = config.PLAYER_COLOR_CHOICES.get(p1_color_text, config.PLAYER_COLORS[1])
+    config.PLAYER_COLORS[2] = config.PLAYER_COLOR_CHOICES.get(p2_color_text, config.PLAYER_COLORS[2])
 
     calculate_layout()  # Recalculate board dimensions
 

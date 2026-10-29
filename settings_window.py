@@ -50,15 +50,10 @@ class SettingsWindow:
         )
         y_offset += 45
 
-        # Color Dropdowns
-        self.all_colors = ['Green', 'Blue', 'Red', 'Purple', 'Orange', 'Cyan']
-        self.rgb_to_name = {
-            (34, 139, 34): 'Green', (30, 144, 255): 'Blue', (255, 0, 0): 'Red',
-            (128, 0, 128): 'Purple', (255, 165, 0): 'Orange', (0, 255, 255): 'Cyan'
-        }
 
-        p1_color_name = self.rgb_to_name.get(config.PLAYER_COLORS[1], 'Green')
-        p2_color_name = self.rgb_to_name.get(config.PLAYER_COLORS[2], 'Blue')
+        self.all_colors = list(config.PLAYER_COLOR_CHOICES.keys())
+        p1_color_name = config.COLOR_NAME_BY_RGB.get(config.PLAYER_COLORS[1], "Green")
+        p2_color_name = config.COLOR_NAME_BY_RGB.get(config.PLAYER_COLORS[2], "Blue")
 
         if p1_color_name == p2_color_name:
             for c in self.all_colors:
