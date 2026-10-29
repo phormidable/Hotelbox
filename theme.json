@@ -1,0 +1,27 @@
+{
+    "defaults": {
+        "colours": {
+            "normal_bg": "#4682B4",
+            "hovered_bg": "#6495ED",
+            "active_bg": "#3C6496",
+            "disabled_bg": "#969696",
+            "normal_text": "#FFFFFF",
+            "hovered_text": "#FFFFFF",
+            "active_text": "#FFFFFF",
+            "disabled_text": "#C8C8C8",
+            "normal_border": "#326496",
+            "hovered_border": "#4678B4",
+            "active_border": "#285078",
+            "disabled_border": "#787878"
+        }
+    },
+    "#settings_button": {
+        "colours": {
+            "normal_bg": "#4682B4",
+            "hovered_bg": "#6495ED",
+            "active_bg": "#3C6496",
+            "normal_text": "#FFFFFF",
+            "normal_border": "#326496"
+        }
+    }
+}

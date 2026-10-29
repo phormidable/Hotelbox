@@ -20,7 +20,7 @@ class GameController:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("arial", 36, bold=True)
         self.score_font = pygame.font.SysFont("arial", 28, bold=True)
-        self.ui_manager = pygame_gui.UIManager((config.WINDOW_WIDTH, config.WINDOW_HEIGHT))
+        self.ui_manager = pygame_gui.UIManager((config.WINDOW_WIDTH, config.WINDOW_HEIGHT), 'theme.json')
 
         self.grid_x = config.GRID_DEFAULT_X
         self.grid_y = config.GRID_DEFAULT_Y
@@ -40,7 +40,14 @@ class GameController:
         self.settings_window = None
         self.confirm_window = None
 
-        self.settings_button = UIButton(relative_rect=pygame.Rect((240, 10), (120, 35)), text="⚙ Settings", manager=self.ui_manager)
+        self.settings_button = UIButton(
+            relative_rect=pygame.Rect((240, 10), (120, 35)),
+            text="Settings",
+            manager=self.ui_manager,
+            object_id="#settings_button"
+        )
+
+
 
     def calculate_layout(self):
         max_w = (config.WINDOW_WIDTH - 100) // self.grid_x
@@ -193,8 +200,12 @@ class GameController:
             restart_rect = restart_surf.get_rect(center=(config.WINDOW_WIDTH // 2, config.WINDOW_HEIGHT // 2 + 30))
             self.screen.blit(restart_surf, restart_rect)
 
+    @staticmethod
+    def _dropdown_text(dropdown) -> str:
+        opt = dropdown.selected_option
+        return opt[0] if isinstance(opt, tuple) else opt
+
     def _read_settings(self) -> dict:
-        """Read the settings window ONCE into a plain snapshot. No widget references kept."""
         sw = self.settings_window
 
         def as_int(entry, fallback):
@@ -203,15 +214,20 @@ class GameController:
             except ValueError:
                 return fallback
 
+        rules_text = self._dropdown_text(sw.rules)
+        extra_turn_text = self._dropdown_text(sw.extra_turn)
+        p1_color_text = self._dropdown_text(sw.p1_color)
+        p2_color_text = self._dropdown_text(sw.p2_color)
+
         return {
             "grid_x": as_int(sw.grid_x, self.grid_x),
             "grid_y": as_int(sw.grid_y, self.grid_y),
-            "rules": "classic" if "Classic" in sw.rules.selected_option else "4_sides",
-            "extra_turn": sw.extra_turn.selected_option == "Extra turn",
+            "rules": "classic" if "Classic" in rules_text else "4_sides",
+            "extra_turn": extra_turn_text == "Extra turn",
             "names": {1: sw.p1_name.get_text(), 2: sw.p2_name.get_text()},
             "colors": {
-                1: config.PLAYER_COLOR_CHOICES.get(sw.p1_color.selected_option, self.player_colors[1]),
-                2: config.PLAYER_COLOR_CHOICES.get(sw.p2_color.selected_option, self.player_colors[2]),
+                1: config.PLAYER_COLOR_CHOICES.get(p1_color_text, self.player_colors[1]),
+                2: config.PLAYER_COLOR_CHOICES.get(p2_color_text, self.player_colors[2]),
             },
         }
 
@@ -243,7 +259,7 @@ class GameController:
 
     def _handle_settings_accept(self):
         snapshot = self._read_settings()          # <-- read exactly once
-
+        print("snapshot:", snapshot, "needs_reset:", self._needs_reset(snapshot))
         if self._needs_reset(snapshot):
             self.pending_settings = snapshot      # <-- remember it for "Yes"
             self._open_confirm()
