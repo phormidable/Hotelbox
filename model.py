@@ -11,12 +11,21 @@ class Segment:
         self.start = start
         self.end = end
         self.is_horizontal = is_horizontal
-        self.owner = 0  # 0 = unclaimed, 1 = player 1, 2 = player 2
+        self.owner = 0
 
     def get_pixel_midpoint(self, offset_x: int, offset_y: int, spacing: int) -> tuple[int, int]:
         sx, sy = self.start.to_pixel(offset_x, offset_y, spacing)
         ex, ey = self.end.to_pixel(offset_x, offset_y, spacing)
         return (sx + ex) // 2, (sy + ey) // 2
+
+    def get_shortened_pixels(self, offset_x: int, offset_y: int, spacing: int, shrink: int) -> tuple[tuple[int, int], tuple[int, int]]:
+        """Returns start and end pixel coordinates, shortened by 'shrink' amount."""
+        sx, sy = self.start.to_pixel(offset_x, offset_y, spacing)
+        ex, ey = self.end.to_pixel(offset_x, offset_y, spacing)
+        if self.is_horizontal:
+            return (sx + shrink, sy), (max(sx + shrink, ex - shrink), ey)
+        else:
+            return (sx, sy + shrink), (ex, max(sy + shrink, ey - shrink))
 
 class Square:
     def __init__(self, top: Segment, bottom: Segment, left: Segment, right: Segment):
@@ -28,9 +37,7 @@ class Square:
 
     @property
     def sides_drawn(self) -> bool:
-        """True if all 4 sides have been claimed by anyone."""
-        return (self.top.owner != 0 and self.bottom.owner != 0 and
-                self.left.owner != 0 and self.right.owner != 0)
+        return all(s.owner != 0 for s in (self.top, self.bottom, self.left, self.right))
 
     @property
     def is_complete_classic(self) -> bool:

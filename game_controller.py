@@ -63,51 +63,90 @@ class GameController:
 
     def draw_board(self):
         self.screen.fill((240, 240, 240))
-        gray = (180, 180, 180)
         ox, oy, sp = self.board_offset_x, self.board_offset_y, self.spacing
+        shrink = config.DOT_RADIUS
+        thickness = config.LINE_THICKNESS
 
-        # Draw empty segments
+        # 1. Draw ALL segments (empty and claimed)
         for row in self.game.model.h_segments:
             for seg in row:
-                pygame.draw.line(self.screen, gray, seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), 2)
+                p1, p2 = seg.get_shortened_pixels(ox, oy, sp, shrink)
+                pygame.draw.line(self.screen, self.player_colors[seg.owner], p1, p2, thickness)
+
         for row in self.game.model.v_segments:
             for seg in row:
-                pygame.draw.line(self.screen, gray, seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), 2)
+                p1, p2 = seg.get_shortened_pixels(ox, oy, sp, shrink)
+                pygame.draw.line(self.screen, self.player_colors[seg.owner], p1, p2, thickness)
 
-        # Draw completed squares
+        # 2. Draw completed squares
         for r, row in enumerate(self.game.model.squares):
             for c, square in enumerate(row):
                 if square.completed_by != 0:
                     color = self.player_colors[square.completed_by]
                     self.screen.blit(self._get_box_surface(color, sp), (ox + c * sp, oy + r * sp))
 
-        # Draw claimed segments
-        for row in self.game.model.h_segments:
-            for seg in row:
-                if seg.owner != 0:
-                    pygame.draw.line(self.screen, self.player_colors[seg.owner],
-                                     seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), config.LINE_THICKNESS)
-        for row in self.game.model.v_segments:
-            for seg in row:
-                if seg.owner != 0:
-                    pygame.draw.line(self.screen, self.player_colors[seg.owner],
-                                     seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), config.LINE_THICKNESS)
-
-        # Draw dots
-        for row in self.game.model.points:
-            for point in row:
-                pygame.draw.circle(self.screen, (50, 50, 50), point.to_pixel(ox, oy, sp), config.DOT_RADIUS)
-
-        # Draw hovered segment (rendered last so it pops on top)
+        # 3. Draw hovered segment
         if not self.game.is_over and not self.settings_window and not self.confirm_window:
             hovered = self.game.get_hovered_segment(pygame.mouse.get_pos(), ox, oy, sp, self.click_threshold)
             if hovered:
                 is_h, r, c = hovered
                 seg = self.game.model.h_segments[r][c] if is_h else self.game.model.v_segments[r][c]
+                p1, p2 = seg.get_shortened_pixels(ox, oy, sp, shrink)
+                pygame.draw.line(self.screen, config.HOVER_COLOR, p1, p2, thickness + 2)
 
-                # Draw with hover color and slightly thicker line for emphasis
-                pygame.draw.line(self.screen, config.HOVER_COLOR,
-                                 seg.start.to_pixel(ox, oy, sp), seg.end.to_pixel(ox, oy, sp), config.LINE_THICKNESS + 2)
+        # 4. Draw dots as 4 smaller diamonds (squares rotated 45 degrees)
+        dot_color = config.DOT_COLOR
+        half_rd = config.DOT_RADIUS / 2.0
+
+        for r, row in enumerate(self.game.model.points):
+            for c, point in enumerate(row):
+                x, y = point.to_pixel(ox, oy, sp)
+                rd = config.DOT_RADIUS
+
+                # Main diamond vertices
+                top_pt = (x, y - rd)
+                right_pt = (x + rd, y)
+                bottom_pt = (x, y + rd)
+                left_pt = (x - rd, y)
+
+                # Midpoints of the main diamond edges (these form the inner corners of the small diamonds)
+                tr_pt = (x + half_rd, y - half_rd)
+                br_pt = (x + half_rd, y + half_rd)
+                bl_pt = (x - half_rd, y + half_rd)
+                tl_pt = (x - half_rd, y - half_rd)
+
+                # Draw base diamond first to prevent any 1px gaps between the smaller diamonds
+                base_diamond = [top_pt, right_pt, bottom_pt, left_pt]
+                pygame.draw.polygon(self.screen, dot_color, base_diamond)
+
+                # Define the 4 smaller diamonds
+                top_diamond = [(x, y), tl_pt, top_pt, tr_pt]
+                bottom_diamond = [(x, y), bl_pt, bottom_pt, br_pt]
+                left_diamond = [(x, y), tl_pt, left_pt, bl_pt]
+                right_diamond = [(x, y), tr_pt, right_pt, br_pt]
+
+                # Determine colors based on adjacent segments
+                # Top small diamond points UP -> connects to vertical segment ABOVE
+                v_top_owner = self.game.model.v_segments[r - 1][c].owner if r > 0 else 0
+                top_color = self.player_colors[v_top_owner] if v_top_owner != 0 else dot_color
+
+                # Bottom small diamond points DOWN -> connects to vertical segment BELOW
+                v_bottom_owner = self.game.model.v_segments[r][c].owner if r < self.game.model.grid_y else 0
+                bottom_color = self.player_colors[v_bottom_owner] if v_bottom_owner != 0 else dot_color
+
+                # Left small diamond points LEFT -> connects to horizontal segment LEFT
+                h_left_owner = self.game.model.h_segments[r][c - 1].owner if c > 0 else 0
+                left_color = self.player_colors[h_left_owner] if h_left_owner != 0 else dot_color
+
+                # Right small diamond points RIGHT -> connects to horizontal segment RIGHT
+                h_right_owner = self.game.model.h_segments[r][c].owner if c < self.game.model.grid_x else 0
+                right_color = self.player_colors[h_right_owner] if h_right_owner != 0 else dot_color
+
+                # Draw the colored smaller diamonds over the base diamond
+                pygame.draw.polygon(self.screen, top_color, top_diamond)
+                pygame.draw.polygon(self.screen, bottom_color, bottom_diamond)
+                pygame.draw.polygon(self.screen, left_color, left_diamond)
+                pygame.draw.polygon(self.screen, right_color, right_diamond)
 
     def draw_ui(self):
         score1, score2 = self.game.model.get_scores()
