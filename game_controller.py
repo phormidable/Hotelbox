@@ -25,6 +25,7 @@ class GameController:
         self.grid_x = config.GRID_DEFAULT_X
         self.grid_y = config.GRID_DEFAULT_Y
         self.rules = config.DEFAULT_RULES
+        self.extra_turn_on_square = config.DEFAULT_EXTRA_TURN
         self.player_names = config.DEFAULT_PLAYER_NAMES.copy()
         self.player_colors = config.DEFAULT_PLAYER_COLORS.copy()
 
@@ -34,7 +35,7 @@ class GameController:
         self.click_threshold = 0.0
         self.calculate_layout()
 
-        self.game = Game(self.grid_x, self.grid_y, self.rules, config.DEFAULT_EXTRA_TURN)
+        self.game = Game(self.grid_x, self.grid_y, self.rules, self.extra_turn_on_square)
         self.settings_window = None
         self.confirm_window = None
 
@@ -198,6 +199,10 @@ class GameController:
         rules_text = self.settings_window.rules.selected_option
         self.rules = "classic" if "Classic" in rules_text else "4_sides"
 
+        # Read the checkbox state
+        extra_turn_text = self.settings_window.extra_turn.selected_option
+        self.extra_turn_on_square = (extra_turn_text == 'Extra turn')
+
         p1_color = self.settings_window.p1_color.selected_option
         p2_color = self.settings_window.p2_color.selected_option
         self.player_colors[1] = config.PLAYER_COLOR_CHOICES.get(p1_color, self.player_colors[1])
@@ -205,7 +210,11 @@ class GameController:
 
         self.calculate_layout()
         if reset_board:
-            self.game.reset(self.grid_x, self.grid_y, self.rules)
+            self.game.reset(self.grid_x, self.grid_y, self.rules, self.extra_turn_on_square)
+        else:
+            # If not resetting the board, still update the rules in the model
+            self.game.model.rules = self.rules
+            self.game.model.extra_turn_on_square = self.extra_turn_on_square
 
     def _handle_settings_accept(self):
         try:
@@ -217,7 +226,12 @@ class GameController:
         rules_text = self.settings_window.rules.selected_option
         rules_changed = ("Classic" in rules_text) != (self.rules == "classic")
 
-        if new_x != self.grid_x or new_y != self.grid_y or rules_changed:
+        # Check if the extra turn rule was toggled
+        extra_turn_text = self.settings_window.extra_turn.selected_option
+        extra_turn_changed = (extra_turn_text == 'Extra turn') != self.extra_turn_on_square
+
+        # Prompt to reset if ANY major rule/size changed
+        if new_x != self.grid_x or new_y != self.grid_y or rules_changed or extra_turn_changed:
             self.confirm_window = ConfirmResetWindow(self.ui_manager)
         else:
             self._apply_settings(reset_board=False)
@@ -239,7 +253,8 @@ class GameController:
                     self.settings_window = SettingsWindow(
                         self.ui_manager, self.grid_x, self.grid_y, self.rules,
                         self.player_names[1], self.player_names[2],
-                        self.player_colors[1], self.player_colors[2]
+                        self.player_colors[1], self.player_colors[2],
+                        self.extra_turn_on_square
                     )
                 elif self.settings_window and event.ui_element == self.settings_window.accept_button:
                     self._handle_settings_accept()

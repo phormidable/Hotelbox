@@ -1,11 +1,11 @@
 import pygame
-from pygame_gui.elements import UIWindow, UIButton, UITextEntryLine, UIDropDownMenu, UILabel
+from pygame_gui.elements import UIWindow, UIButton, UITextEntryLine, UIDropDownMenu, UILabel, UICheckBox
 import config
 
 class SettingsWindow:
-    def __init__(self, manager, grid_x, grid_y, rules, p1_name, p2_name, p1_color_rgb, p2_color_rgb):
+    def __init__(self, manager, grid_x, grid_y, rules, p1_name, p2_name, p1_color_rgb, p2_color_rgb, extra_turn_on_square):
         self.manager = manager
-        self.window = UIWindow(rect=pygame.Rect((100, 80), (400, 480)), window_display_title="Game Settings", manager=manager)
+        self.window = UIWindow(rect=pygame.Rect((100, 80), (400, 525)), window_display_title="Game Settings", manager=manager)
         y_offset = 15
 
         UILabel(relative_rect=pygame.Rect((15, y_offset), (140, 30)), text="Player 1 Name:", manager=manager, container=self.window)
@@ -32,6 +32,16 @@ class SettingsWindow:
         self.rules = UIDropDownMenu(
             options_list=['Classic (Any 4 sides)', '4 Sides (Same color)'],
             starting_option=current_rule,
+            relative_rect=pygame.Rect((165, y_offset), (200, 30)),
+            manager=manager, container=self.window
+        )
+        y_offset += 45
+
+        # --- Complete Square Dropdown ---
+        UILabel(relative_rect=pygame.Rect((15, y_offset), (140, 30)), text="Complete Square:", manager=manager, container=self.window)
+        current_extra_turn = 'Extra turn' if extra_turn_on_square else 'No extra turn'
+        self.extra_turn = UIDropDownMenu(options_list=['Extra turn', 'No extra turn'],
+            starting_option=current_extra_turn,
             relative_rect=pygame.Rect((165, y_offset), (200, 30)),
             manager=manager, container=self.window
         )
