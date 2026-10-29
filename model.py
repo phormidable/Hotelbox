@@ -53,17 +53,20 @@ class Square:
     def is_complete(self, rules: str) -> bool:
         return self.is_complete_classic if rules == "classic" else self.is_complete_4_sides
 
+
 class GridModel:
-    def __init__(self, grid_x: int, grid_y: int, rules: str):
+    def __init__(self, grid_x: int, grid_y: int, rules: str, extra_turn_on_square: bool):
         self.grid_x = grid_x
         self.grid_y = grid_y
         self.rules = rules
+        self.extra_turn_on_square = extra_turn_on_square
         self.reset()
 
-    def reset(self, grid_x: int = None, grid_y: int = None, rules: str = None):
+    def reset(self, grid_x: int = None, grid_y: int = None, rules: str = None, extra_turn_on_square: bool = None):
         if grid_x is not None: self.grid_x = grid_x
         if grid_y is not None: self.grid_y = grid_y
         if rules is not None: self.rules = rules
+        if extra_turn_on_square is not None: self.extra_turn_on_square = extra_turn_on_square
 
         self.points = [[Point(r, c) for c in range(self.grid_x + 1)] for r in range(self.grid_y + 1)]
 
@@ -73,8 +76,7 @@ class GridModel:
         self.v_segments = [[Segment(self.points[r][c], self.points[r + 1][c], False)
                             for c in range(self.grid_x + 1)] for r in range(self.grid_y)]
 
-        self.squares = [[Square(self.h_segments[r][c], self.h_segments[r + 1][c],
-                                self.v_segments[r][c], self.v_segments[r][c + 1])
+        self.squares = [[Square(self.h_segments[r][c], self.h_segments[r + 1][c], self.v_segments[r][c], self.v_segments[r][c + 1])
                          for c in range(self.grid_x)] for r in range(self.grid_y)]
 
         self.current_player = 1

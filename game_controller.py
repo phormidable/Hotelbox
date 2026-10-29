@@ -34,7 +34,7 @@ class GameController:
         self.click_threshold = 0.0
         self.calculate_layout()
 
-        self.game = Game(self.grid_x, self.grid_y, self.rules)
+        self.game = Game(self.grid_x, self.grid_y, self.rules, config.DEFAULT_EXTRA_TURN)
         self.settings_window = None
         self.confirm_window = None
 

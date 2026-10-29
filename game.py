@@ -2,11 +2,11 @@ import math
 from model import GridModel
 
 class Game:
-    def __init__(self, grid_x: int, grid_y: int, rules: str):
-        self.model = GridModel(grid_x, grid_y, rules)
+    def __init__(self, grid_x: int, grid_y: int, rules: str, extra_turn_on_square: bool):
+        self.model = GridModel(grid_x, grid_y, rules, extra_turn_on_square)
 
-    def reset(self, grid_x: int = None, grid_y: int = None, rules: str = None):
-        self.model.reset(grid_x, grid_y, rules)
+    def reset(self, grid_x: int = None, grid_y: int = None, rules: str = None, extra_turn_on_square: bool = None):
+        self.model.reset(grid_x, grid_y, rules, extra_turn_on_square)
 
     @property
     def is_over(self) -> bool:
@@ -51,8 +51,11 @@ class Game:
         if hovered:
             is_h, r, c = hovered
             completed = self.model.claim_segment(is_h, r, c)
-            if completed == 0:
+
+            # Switch turn if no squares were completed OR if the extra turn rule is disabled
+            if completed == 0 or not self.model.extra_turn_on_square:
                 self.model.switch_turn()
+
             self.model.game_over = not self.model.has_free_segments()
             return True
         return False

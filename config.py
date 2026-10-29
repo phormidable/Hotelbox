@@ -29,6 +29,7 @@ DEFAULT_PLAYER_COLORS = {
 
 # Rules default
 DEFAULT_RULES = "4_sides"
+DEFAULT_EXTRA_TURN = True  # Standard Dots and Boxes rule
 
 # Visual constants
 LINE_THICKNESS = 4          # Reduced from 5 to 4
